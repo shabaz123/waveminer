@@ -70,3 +70,12 @@ If you don't hear anything, you can increase the volume by increasing the **-a**
 
     ./dspgen -a 0.4 -f 220
 
+Next Steps
+----------
+
+There are some partner web apps for the Wave Miner, to allow you to operate the Wave Miner directly from a web browser.
+
+To install and use the web apps, visit https://github.com/shabaz123/webdsp
+
+When run, the web apps will automatically call the Wave Miner code.
+
