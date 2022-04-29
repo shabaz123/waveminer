@@ -40,7 +40,9 @@ Ensure, by typing **raspi-config** in a command prompt, that the **I2C** capabil
 Installing the Code
 -------------------
 
-The **waveminer** software contains lots of utilities/applications. Type the following on the Pi in a command prompt to install it:
+The **waveminer** software contains lots of utilities/applications.
+
+Once you have completed the **Pi Pre-Requisites** steps above, type the following on the Pi in a command prompt to install the waveminer software:
 
     mkdir -p ~/development
     cd ~/development
