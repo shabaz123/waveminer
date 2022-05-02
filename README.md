@@ -2,7 +2,7 @@
 Wave Miner
 ==========
 
-This repository contains the schematic, PCB Gerber files, bill of materials and code for the Wave Miner Digital Signal Processor (DSP) board, which connects to the Raspberry Pi (Pi 4 was tested; other versions can work with a small code change). 
+This repository contains the schematic, PCB Gerber files, bill of materials and code for the Wave Miner Digital Signal Processor (DSP) board, which connects to the Raspberry Pi (Pi 4 was tested; other versions can work with a small code change; the addresses called PERIPHERAL_BASE or I2C_BASE in the i2cfunc.h file needs to be modified if you're not using a Pi 4).
 
 For simplicity this project uses a ready-made low-cost (about $20 USD) DSP module from AliExpress, it is the green board on the left in the photo below. The remainder parts and blue circuit board should cost less than $30, and assembly time is just a few hours.
 
@@ -140,9 +140,30 @@ When run, the web apps will automatically call the Wave Miner code.
 Creating Custom Apps
 --------------------
 
-To create your own custom DSP apps, install free-to-use SigmaStudio software. 
+To create your own custom DSP apps, install free-to-use SigmaStudio software. SigmaStudio uses graphical programming. 
 
 The SigmaStudio Automotive and Generic Release SigmaStudio 64 Bit-OS Rev 4.6 is available from the [Analog Devices](https://www.analog.com/en/design-center/evaluation-hardware-and-software/software/ss_sigst_02.html#software-overview) website.
+
+Use the software to drag-and-drop to build up the following Hardware Configuration:
+
+<img width="100%" align="left" src="assets\sigma-drag.png">
+
+Next, click on the Schematic tab and construct your desired siganl flow, again using drag-and-drop. Here is an example to generate a sine wave with configurable amplitude:
+
+<img width="100%" align="left" src="assets\dspgen-flow.png">
+
+Click on the icon shown here, which is the **Link Compile Download** icon:
+
+<img width="100%" align="left" src="assets\lcc-icon.png">
+
+You will get an error message concerning absence of USB programmer tool, but you can ignore the error. Now click back to the Hardware Configuration pane, and right-click on the ADAU1401 component which was drag-and-dropped earlier, and select **Write Latest Compilation to E2PROM**
+
+<img width="100%" align="left" src="assets\write-eeprom.png">
+
+Now go into the project folder, and there will be a sub-folder inside there called **xyz_IC 2** where xyz is your project name. The firmare file will be there, called **E2prom.bin**. That file can be transferred to the Pi, renamed to something more memorable, and then you can use the **eeload -p** command as shown in the examples earlier.
+
+If you wish to use the Pi to configure the elements in the graphical flow, then click on the item in SigmaStudio and make any example modification to it, for instance change the frequency displayed inside the sine tone generation box. You should see a stream of hex bytes displayed in the lower pane in Sigma Studio; those bytes are the values that need to be sent using I2C. Refer to the **dsputil.cpp** file to see how this is done. 
+
 
 
 
