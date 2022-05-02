@@ -4,7 +4,57 @@ Wave Miner
 
 This repository contains the schematic, PCB Gerber files, bill of materials and code for the Wave Miner DSP board, which connects to the Raspberry Pi (Pi 4 was tested; other versions can work with a small code change).
 
-<img width="30%" align="right" src="assets\waveminer-pi-annotated.jpg">
+<img width="100%" align="left" src="assets\waveminer-pi-annotated.jpg">
+
+
+
+What can you do with the Wave Miner?
+------------------------------------
+
+Here are some examples; all of these are possible with the hardware and software. Reboot the Wave Miner card (toggle the power button left and then right) after using the **eeload** command:
+
+(1) Sine Wave Generation at (say) 1000 Hz, with an amplitude of 1.0 (1.0 corresponds to 2.6 Vp-p):
+
+    ./eeload -p tone_app.bin
+    ./dspgen -f 1000 -a 1.0
+
+(2) Notch filter at (say) 50 Hz:
+
+    ./eeload -p notch4.bin
+    ./notch -n 50
+
+(3) Bandpass filter a signal, between 300 Hz and 3000 Hz:
+
+    ./eeload -p filter6.bin
+    ./filter -b1 300 -b2 3000
+
+(4) High-pass filter a signal, at 60 Hz:
+
+    ./eeload -p filter6.bin
+    ./filter -h 60
+
+(5) Low-pass filter a signal, at 500 Hz:
+
+    ./eeload -p filter6.bin
+    ./filter -l 500
+
+(6) Very experimental lock-in amplifier, to identify weak signals
+
+    ./eeload -p lia.bin
+
+The stimulus signal is generated at Output channel 1, and the input is at the channel 1 input connection. The lock-in amplifier result is a tone output for now, audible on output channel 2. The tone increases as the signal is detected by the lock-in amplifier.
+
+(7) Frequency response and RMS measurements:
+
+    ./eeload -p freqresp.bin
+    
+and
+
+    ./eeload -p rms.bin
+
+
+See the webdsp project which uses the Wave Miner hardware. It describes how to view the frequency response and RMS values on a web page.
+
 
 Ordering the PCB
 ----------------
@@ -23,7 +73,7 @@ You will also need a Raspberry Pi. A Pi 4 was tested. It is possible to use a Pi
 Building the Wave Miner
 -----------------------
 
-Nearly all parts are through-hole, so it is easy to solder. The few surface mount parts are large and mostly optional. The ferrite choke is hand-wound, but if you don't have the parts (ferrite core and ~ 0.2mm diameter enamelled copper wire) then you could just put a wire short on the PCB.
+Nearly all parts are through-hole, so it is easy to solder, since the main part (the DSP module) is ready-made. The few surface mount parts are large and mostly optional. The ferrite choke is hand-wound, but if you don't have the parts (ferrite core and ~ 0.2mm diameter enamelled copper wire) then you could just put a wire short on the PCB.
 
 Plug four jumpers to allow the two channels of input and two channels of output signals to get to the connectors. Plug a fifth jumper to select the power source (for instance select the Pi setting, so that the Pi powers the Wave Miner board).
 
