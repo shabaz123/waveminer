@@ -2,7 +2,9 @@
 Wave Miner
 ==========
 
-This repository contains the schematic, PCB Gerber files, bill of materials and code for the Wave Miner DSP board, which connects to the Raspberry Pi (Pi 4 was tested; other versions can work with a small code change).
+This repository contains the schematic, PCB Gerber files, bill of materials and code for the Wave Miner Digital Signal Processor (DSP) board, which connects to the Raspberry Pi (Pi 4 was tested; other versions can work with a small code change). 
+
+For simplicity this project uses a ready-made low-cost (about $20 USD) DSP module from AliExpress, it is the green board on the left in the photo below. The remainder parts and blue circuit board should cost less than $30, and assembly time is just a few hours.
 
 <img width="100%" align="left" src="assets\waveminer-pi-annotated.jpg">
 
@@ -77,6 +79,8 @@ Nearly all parts are through-hole, so it is easy to solder, since the main part 
 
 Plug four jumpers to allow the two channels of input and two channels of output signals to get to the connectors. Plug a fifth jumper to select the power source (for instance select the Pi setting, so that the Pi powers the Wave Miner board).
 
+<img width="100%" align="left" src="assets\pi-dsp-jumpers.png">
+
 Connecting the Wave Miner to the Pi
 -----------------------------------
 
@@ -132,4 +136,16 @@ There are some partner web apps for the Wave Miner, to allow you to operate the 
 To install and use the web apps, visit https://github.com/shabaz123/webdsp
 
 When run, the web apps will automatically call the Wave Miner code.
+
+Creating Custom Apps
+--------------------
+
+To create your own custom DSP apps, install free-to-use SigmaStudio software. 
+
+The SigmaStudio Automotive and Generic Release SigmaStudio 64 Bit-OS Rev 4.6 is available from the [Analog Devices](https://www.analog.com/en/design-center/evaluation-hardware-and-software/software/ss_sigst_02.html#software-overview) website.
+
+
+
+
+
 
