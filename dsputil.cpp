@@ -227,6 +227,23 @@ set_amp(int addr, double a) {
     i2c_write(dsp_handle, (unsigned char*)buf, 6);
 }
 
+// set the DC integer (28.0) value for the DSP DC Input Entry object
+// (Sources->DC->DC Input Entry)
+// v is a value 0 to 0xffff
+void
+set_dc_int(int addr, int v) {
+    char buf[6];
+
+    swap_order(buf, addr); // store addr into start of buffer
+    // DCInpAlg1
+    buf[2] = 0; // really we should handle a 4-byte integer, but for now restrict to 2-bytes
+    buf[3] = 0;
+    swap_order(&buf[4], v); // store integer into the buffer
+    if (do_log) printf("writing to address 0x%02x%02x\n", buf[0], buf[1]);
+    i2c_write(dsp_handle, (unsigned char*)buf, 6);
+}
+
+
 // enable or disable mute (set mute to 1 to mute the signal)
 // (Volume Controls->Mute->No Slew (Standard)->Mute)
 void

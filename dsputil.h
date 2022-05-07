@@ -9,6 +9,7 @@
 #define BLOCKSIZE 32
 #define TWOPOW23 8388608.0
 #define SQROOT2 1.4142135623731
+#define PI 3.1415926535897932384626433832795
 
 // functions to open and close I2C communication with the DSP
 void dsp_open(void);
@@ -63,6 +64,11 @@ void set_sinphase_freq(int addr, int f);
 void set_sinphase_gain(int addr, double amp);
 // set the phase value of the object
 void set_sinphase_phase(int addr, int ang);
+
+// set the DC integer (28.0) value for the DSP DC Input Entry object
+// (Sources->DC->DC Input Entry)
+// v is a value 0 to 0xffff
+void set_dc_int(int addr, int v);
 
 // performs DSP readback (data capture register)
 // addr should be 0x081a or 0x081b for ADAU1401 DSP

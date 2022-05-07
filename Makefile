@@ -1,4 +1,4 @@
-NAME = eeload dspgen dspgen2 level freqresp thd notch pitch filter rms
+NAME = eeload dspgen dspgen2 level freqresp thd notch pitch filter rms imp
 LIB_PATH = /usr/local/lib
 OBJ = i2cfunc.o options.o dsputil.o
 EXTENSION = .cpp
@@ -27,6 +27,8 @@ pitch: pitch.cpp
 filter: filter.cpp
 
 rms: rms.cpp
+
+imp: imp.cpp
 
 %.o: %$(EXTENSION) $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
