@@ -9,6 +9,10 @@ For simplicity this project uses a ready-made low-cost (about $20 USD) DSP modul
 <img width="100%" align="left" src="assets\waveminer-pi-annotated.jpg">
 
 
+What are some example use-cases for it?
+---------------------------------------
+
+Use Wave Miner for examinining signals from sensors (vibration sensors, microphones etc), measuring them and cleaning them up. Wave Miner is low-cost enough that it could be permnanently installed for a particular use-case (e.g. constantly processing sensor signals) or it can be used as an instrument for evaluating new sensor data and deciding how to work with it. You can also use Wave Miner to generate signals, including noise, in order to simulate scenarios, or generate tones or other signals for other project development purposes. Since Wave Miner can handle the audio spectrum range, Wave Miner can also be used for audio effects and processing.
 
 What can you do with the Wave Miner?
 ------------------------------------
