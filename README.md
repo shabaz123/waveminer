@@ -59,7 +59,24 @@ and
     ./eeload -p rms.bin
 
 
-See the webdsp project which uses the Wave Miner hardware. It describes how to view the frequency response and RMS values on a web page.
+See the [webdsp project](https://github.com/shabaz123/webdsp) which uses the Wave Miner hardware. It describes how to view the frequency response and RMS values on a web page.
+
+(8) Impedance Measurement at 1000 Hz (frequency selection #3) using display mode #1 (parallel Rp Rc)
+
+    ./eeload -p imp.bin
+    ./imp -i 3 -d 1
+
+The impedance measurement software currently only supports 100, 120, 1000 and 10000 Hz (selected using -i1 to -i4 respectively) and one display mode (selected using -d 1). The stimulus signal is generated on the first output port on the Wave Miner, and the measurement is made on the first and second input ports (in-phase real, and 90 degree out-of-phase imaginary respectively). External hardware may be required to buffer the stimulus and to amplify the measurement signals, depending on the range of impedance to be measured. Currently there is no calibration capability, so some values in the code may need to be adjusted. 
+
+Example output:
+
+    pi@raspberrypi:~/development/waveminer$ ./imp -i 3 -d 1 -m
+    Phase               (phi) : -0.494 rad
+    Impedance             (Z) : 8.248 ohm
+    Reactance             (X) : -4.443 ohm
+    Resistance            (R) : 6.948 ohm
+    Parallel Resistance  (Rp) : 9.369 ohm
+    Parallel Capacitance (Cp) : 9.153 uF    
 
 
 Ordering the PCB
