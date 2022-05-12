@@ -223,7 +223,7 @@ set_amp(int addr, double a) {
     // Gain1940AlgNS1
     swap_order(buf, addr); // store addr into start of buffer
     double_to_5_23_format( a, &buf[2] );
-    if (do_log) printf("writing to address 0x%02x%02x\n", buf[0], buf[1]);
+    if (do_log) printf("writing to address 0x%02x%02x values 0x%02x,%02x,%02x,%02x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
     i2c_write(dsp_handle, (unsigned char*)buf, 6);
 }
 
@@ -239,8 +239,48 @@ set_dc_int(int addr, int v) {
     buf[2] = 0; // really we should handle a 4-byte integer, but for now restrict to 2-bytes
     buf[3] = 0;
     swap_order(&buf[4], v); // store integer into the buffer
-    if (do_log) printf("writing to address 0x%02x%02x\n", buf[0], buf[1]);
+    if (do_log) printf("writing to address 0x%02x%02x values 0x%02x,%02x,%02x,%02x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
     i2c_write(dsp_handle, (unsigned char*)buf, 6);
+}
+
+// set the DC float (28.0) value for the DSP DC Input Entry object
+// (Sources->DC->DC Input Entry)
+// v is a double value
+void
+set_dc_float(int addr, double v) {
+    char buf[6];
+
+    swap_order(buf, addr); // store addr into start of buffer
+    // DCInpAlg1
+    double_to_5_23_format( v, &buf[2] );
+    if (do_log) printf("writing to address 0x%02x%02x values 0x%02x,%02x,%02x,%02x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+    i2c_write(dsp_handle, (unsigned char*)buf, 6);
+}
+
+// safeload version of set_dc_float
+void
+set_dc_float_safeload(int addr, double v) {
+    char buf[7];
+
+    // set data for safeload operation
+    swap_order(buf, SAFE_DATA0); // data operation
+    buf[2]=0; // this byte is always zero for any safeload data operation
+    // DCInpAlg1
+    double_to_5_23_format( v, &buf[3] );
+    if (do_log) printf("writing to address 0x%02x%02x values 0x%02x,%02x,%02x,%02x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+    i2c_write(dsp_handle, (unsigned char*)buf, 7);
+
+    // set addr for safeload operation
+    swap_order(buf, SAFE_ADDR0); // address operation
+    swap_order(&buf[2], addr); // store addr
+    if (do_log) printf("writing to address 0x%02x%02x values 0x%02x,%02x,%02x,%02x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+    i2c_write(dsp_handle, (unsigned char*)buf, 4);
+
+    // initiate the safeload transfer
+    swap_order(buf, SAFE_INITIATE); // safeload initiate operation
+    swap_order(&buf[2], SAFE_SET_IST);
+    if (do_log) printf("writing to address 0x%02x%02x values 0x%02x,%02x,%02x,%02x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+    i2c_write(dsp_handle, (unsigned char*)buf, 4);
 }
 
 
@@ -272,6 +312,27 @@ set_pitch(int addr, double p) {
     // PitchShiftsAlg1freq
     swap_order(buf, addr); // store addr into start of buffer
     double_to_5_23_format( p, &buf[2] );
+    if (do_log) printf("writing to address 0x%02x%02x\n", buf[0], buf[1]);
+    i2c_write(dsp_handle, (unsigned char*)buf, 6);
+}
+
+// set the switch on or off
+// (Sources->Switch(0,1)->28_0 Format->On/Off Switch)
+// v=0 represents OFF, and v>0 represents ON.
+void
+set_switch(int addr, int v) {
+    char buf[6];
+
+    // SwitchAlg28Nison
+    swap_order(buf, addr); // store addr into start of buffer
+    buf[2]=0;
+    buf[3]=0;
+    buf[4]=0;
+    if (v) {
+        buf[5] = 1;
+    } else {
+        buf[5] = 0;
+    }
     if (do_log) printf("writing to address 0x%02x%02x\n", buf[0], buf[1]);
     i2c_write(dsp_handle, (unsigned char*)buf, 6);
 }

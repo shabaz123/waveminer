@@ -34,20 +34,64 @@
 
 // defines
 #define FTABLE_SIZE 4
+#define GAIN_ARRAY_SIZE 4
+
+#define PAUSE_LOGGING do_log_store=do_log; do_log=0;
+#define RESUME_LOGGING do_log=do_log_store;
 
 // consts used by imp.bin
 const int DC_SELECT = 0x0028; // Source selector 0-3
+const int DC_HOLD_MEAS = 0x002b; // node for ref level of potential divider
+const int DC_SUB_I = 0x0029; // Select value to subtract from I measurement
+const int DC_SUB_Q = 0x002a; // Select value to subtract from Q measurement
 const int LEVEL_ADDR = 0x081a; // level_addr should be 0x081a or 0x081b for ADAU1401 DSP
-const int LEVEL_X100_I = 0x0626; // node is a 16-bit value
-const int LEVEL_X100_Q = 0x061a; // node is a 16-bit value
-const int LEVEL_X100_I_ZOOM = 0x662; // node is a 16-bit value
-const int LEVEL_X100_Q_ZOOM = 0x066e; // node is a 16-bit value
-const int LEVEL_TOP = 0x03d2; // node is a 16-bit value
+const int LEVEL_I = 0x068a; // node for I measurement (vreal)
+const int LEVEL_I_X10 = 0x06d2;
+const int LEVEL_I_X100 = 0x06f6;
+const int LEVEL_Q = 0x06a2; // node for Q measurement (vimag)
+const int LEVEL_Q_X10 = 0x06de;
+const int LEVEL_Q_X100 = 0x06ea;
+const int LEVEL_TOP = 0x03ea; // node for ref level of potential divider 
+const int GAIN_READ_BLOCK[] = {0x0047, 0x0049, 0x0048, 0x004a};
+
 
 const double ftable[] = {100.0, 120.0, 1000.0, 10000.0};
 
 // externs
 extern char do_log;
+
+// globals
+char do_log_store; // use to reduce logging for part of the code
+
+// ************* functions *************************
+
+void
+freeze_meas(void) {
+    // the 'value hold' register uses safeload otherwise there are strange values
+    set_dc_float_safeload(DC_HOLD_MEAS, 0.0);    // freeze the measurement registers
+}
+
+void
+unfreeze_meas(void) {
+    // the 'value hold' register uses safeload otherwise there are strange values
+    set_dc_float_safeload(DC_HOLD_MEAS, 1.0);    // freeze the measurement registers
+}
+
+// reset_dsp_settings
+// try to set all configuration to a default
+void
+reset_dsp_settings(void)
+{
+    PAUSE_LOGGING;
+    unfreeze_meas();
+    //for (i=0; i<GAIN_ARRAY_SIZE; i++) {
+    //    set_amp(GAIN_READ_BLOCK[i], 1);
+    //}
+
+    set_dc_float_safeload(DC_SUB_I, 0.0);    // subtract zero from the measurements
+    set_dc_float_safeload(DC_SUB_Q, 0.0);
+    RESUME_LOGGING;
+}
 
 // ************* main program **********************
 int
@@ -55,28 +99,28 @@ main(int argc, char **argv)
 {
     char* sw; // used for command-line arguments
     int fidx=0;
+    int intportion_real;
+    int intportion_imag;
     double freqhz= 0;
     int dformat=0;
+    char do_dsp_reset=0;
     char do_freq=0;
     char do_meas=0;
-    double v100[2];
-    double v1[2];
-    double ph100 = 0.0;
-    double ph1 = 0.0;
-    double mag100 = 0.0;
-    double mag1 = 0.0;
-    double cart100[2];
-    double cart1[2];
-    double restop = 1000; // 1000 ohm top resistor
-    double vstimpeak = 1.16587766; // stimulus voltage, measure 0.8244V RMS from op amp output to vmid. This is 1.16587766 V peak.
-    double vinternalpeak = 1.217; // internally generated to go to multiplier
-    double vtop = 0.0; // voltage across top resistor
+    double v_complex[2];    // real and imaginary voltage measurement results from the DSP
+                            // vreal is v_complex[0] and vimag is v_complex[1]
+    double phase = 0.0;     // phase and mag representation of v_complex
+    double mag = 0.0;       //
+    double restop = 1000; // resistance of top resistor in the potential divider
+    double vstimpeak = 0.0; // stimulus voltage, measures approx 0.824V RMS (1.166 Vpeak) from op amp output to 2.5 V rail.
+    double vtop = 0.0; // voltage across top resistor (i.e. vstimpeak minus the voltage at center of potential divider)
     double itop = 0.0; // current through resistor (also through DUT)
-    double impdut = 0.0;
-    double resdut = 0.0;
-    double reactdut = 0.0;
-    double capdut = 0.0;
-    double inddut = 0.0;
+    double reactdut_parallel = 0.0;
+    double impdut = 0.0;  // impedance Z
+    double reactdut = 0.0; // reactance X
+    double resdut = 0.0; // resistance R
+    double resdut_parallel = 0.0;  // parallel resistance Rp
+    double capdut_parallel = 0.0;  // parallel capacitance Cp
+    double inddut_parallel = 0.0;  // parallel inductance Lp
 
     // read in the command-line arguments
     if (cmdOptionExists(argv, argv + argc, "-m")) {
@@ -94,6 +138,7 @@ main(int argc, char **argv)
         freqhz = ftable[fidx-1];
         if (do_log) printf("Selecting frequency %lf Hz\n", freqhz);
         do_freq=1;
+        do_dsp_reset=1;
     }
 
     sw = getCmdOption(argv, argv + argc, "-d");
@@ -105,91 +150,152 @@ main(int argc, char **argv)
         }
         if (do_log) printf("Selecting display format #%d\n", dformat);
         do_meas=1;
+        do_dsp_reset=1;
     }
+
+    do_log_store = do_log;
 
     dsp_open(); // create I2C handle for the DSP
 
+    if (do_dsp_reset) {
+        reset_dsp_settings();
+        //delay_ms(500);
+    }
+
     if (do_freq) {  // program the quadrature source selection
+        PAUSE_LOGGING;
         set_dc_int(DC_SELECT, fidx-1);
+        RESUME_LOGGING;
     }
 
     if (do_meas) {
-        delay_ms(900);
 
-        v100[0] = readback(LEVEL_ADDR, LEVEL_X100_I); 
-        v100[1] = readback(LEVEL_ADDR, LEVEL_X100_Q); 
+        PAUSE_LOGGING;
+        freeze_meas();
 
-        if ((v100[0]<0.1) && (v100[1]<0.1)) {
-            // amplitudes are low, we can use the zoomed values
-            printf("using zoom\n");
-            v100[0] = readback(LEVEL_ADDR, LEVEL_X100_I_ZOOM) / 100;
-            v100[1] = readback(LEVEL_ADDR, LEVEL_X100_Q_ZOOM) / 100;
+        v_complex[0] = readback(LEVEL_ADDR, LEVEL_I); 
+        v_complex[1] = readback(LEVEL_ADDR, LEVEL_Q); 
+        if (do_log) printf("frozen real, imag is [%.8lf, %.8lf]\n", v_complex[0], v_complex[1]);
+        RESUME_LOGGING;
+
+        // now we subtract the integer value, so that we can zoom into the fractional part
+        intportion_real = (int)v_complex[0];
+        intportion_imag = (int)v_complex[1];
+        PAUSE_LOGGING;
+        set_dc_float_safeload(DC_SUB_I, (double)intportion_real);
+        set_dc_float_safeload(DC_SUB_Q, (double)intportion_imag);
+        RESUME_LOGGING;
+        //delay_ms(100);
+        // now read the fractional part with the X10 registers
+        PAUSE_LOGGING;
+        v_complex[0] = readback(LEVEL_ADDR, LEVEL_I_X10) / 10;
+        //delay_ms(100);
+        v_complex[1] = readback(LEVEL_ADDR, LEVEL_Q_X10) / 10;
+        //delay_ms(100);
+        RESUME_LOGGING;
+
+        // check if we can read the X10 registers for more resolution
+        if (v_complex[0]<0.1) {
+            PAUSE_LOGGING;
+            v_complex[0] = readback(LEVEL_ADDR, LEVEL_I_X100) / 100;
+            RESUME_LOGGING;
+            //delay_ms(100);
         }
-       
-        v100[0] = ms_to_pp(v100[0]);
-        v100[1] = ms_to_pp(v100[1]);
 
+        if (v_complex[1]<0.1) {
+            PAUSE_LOGGING;
+            v_complex[1] = readback(LEVEL_ADDR, LEVEL_Q_X100) / 100;
+            RESUME_LOGGING;
+            //delay_ms(100);
+        }
+
+        //printf("enhanced fractions are [%.8lf, %.8lf]\n", v_complex[0], v_complex[1]);
+        v_complex[0] = v_complex[0] + (double)intportion_real;
+        v_complex[1] = v_complex[1] + (double)intportion_imag;
+        if (do_log) printf("hi-res real, imag are now [%.8lf, %.8lf]\n", v_complex[0], v_complex[1]);
+
+        v_complex[0] = ms_to_pp(v_complex[0]);
+        v_complex[1] = ms_to_pp(v_complex[1]);
+
+        PAUSE_LOGGING;
         vstimpeak = readback(LEVEL_ADDR, LEVEL_TOP);
+        RESUME_LOGGING;
+
         vstimpeak = ms_to_pp(vstimpeak);
 
-        printf("X100:\n");
-        printf("Source voltage: %lf V peak\n", vstimpeak);
-        printf("Raw vreal, vimag values (Vpp): [%lf, %lf]\n", v100[0], v100[1]);
+        if (do_log) printf("Raw vreal, vimag values (Vpp): [%lf, %lf]\n", v_complex[0], v_complex[1]);
 
         // correction to scale the cartesian values
-        v100[0]=v100[0]/28.3;
-        v100[1]=v100[1]/28.3;
+        v_complex[0]=v_complex[0]/70.45;
+        v_complex[1]=v_complex[1]/70.45;
 
-        printf("Scaled vreal, vimag values: [%lf, %lf]\n", v100[0], v100[1]);
+        if (do_log) printf("Scaled vreal, vimag values: [%lf, %lf]\n", v_complex[0], v_complex[1]);
 
         // raw phase:
-        mag100 = sqrt( pow(v100[0], 2) + pow(v100[1], 2) );
-        if (v100[1]>=0) {
-            ph100 = (PI/2) - atan(v100[0]/v100[1]);
+        mag = sqrt( pow(v_complex[0], 2) + pow(v_complex[1], 2) );
+        if (v_complex[1]>=0) {
+            phase = (PI/2) - atan(v_complex[0]/v_complex[1]);
         } else {
-            ph100 = (0.0 - (PI/2)) - atan(v100[0]/v100[1]);
+            phase = (0.0 - (PI/2)) - atan(v_complex[0]/v_complex[1]);
         }
-        printf("mag, phase (rad) is [%lf, %lf]\n", mag100, ph100);
+        if (do_log) printf("mag, phase (rad) is [%lf, %lf]\n", mag, phase);
         // phase and mag correction done by using a known 10 ohm resistor
         // i.e. assume it has pure 10 ohm resistance and no reactance
         // phase correction
-        ph100 = ph100 - 0.391420;
-        ph100 = 0 - ph100;
+        phase = phase - 0.391466;
+        phase = 0 - phase;
         // mag correction
-        //mag100 = mag100 / 45.5;
-        printf("Corrected mag, phase (rad) is [%lf, %lf]\n", mag100, ph100);
-        cart100[0] = mag100 * cos(ph100);
-        cart100[1] = mag100 * sin(ph100);
-        printf("Corrected real, imag is [%lf, %lf]\n", cart100[0], cart100[1]);
+        //mag = mag / 45.5;
+        if (do_log) printf("Corrected mag, phase (rad) is [%lf, %lf]\n", mag, phase);
+        v_complex[0] = mag * cos(phase);
+        v_complex[1] = mag * sin(phase);
+        if (do_log) printf("Corrected vreal, vimag is [%lf, %lf]\n", v_complex[0], v_complex[1]);
+
+        if (do_log) printf("Stim: %.2lf Hz source voltage: %lf V peak\n", freqhz, vstimpeak);
 
         // aim: find current through the circuit.
         // current through top resistor (phasor subtraction then magnitude via pythag):
-        vtop = sqrt(pow(vstimpeak-cart100[0], 2) + pow(cart100[1], 2));
-        printf("voltage across source resistor is %lf Vrms\n", vtop/SQROOT2);
+        vtop = sqrt(pow(vstimpeak-v_complex[0], 2) + pow(v_complex[1], 2));
+        if (do_log) printf("voltage across source resistor is %lf V peak (%lf V rms)\n", vtop, vtop/SQROOT2);
         itop = vtop/restop;
-        printf("current through circuit is %lf mA peak (%lf mA RMS)\n", itop*1000.0, (itop/SQROOT2)*1000.0);
-        // impedance Z of DUT; use the same current. We don't need this to calculate the resistance and reactance.
-        impdut = mag100 / itop;
-        printf("DUT impedance (Z) at %lf Hz: %lf ohm\n", freqhz, impdut);
-        // DUT resistance; use magnitude
-        resdut = mag100 / (itop * cos(ph100));
-        reactdut = mag100 / (itop * sin(ph100));
+        if (do_log) printf("current through circuit is %lf mA peak (%lf mA RMS)\n", itop*1000.0, (itop/SQROOT2)*1000.0);
+        reactdut_parallel = mag / (itop * sin(phase)); // use this to compute capacitance and inductance
+        // DUT impedance (Z) use the same current. We don't need this to calculate the parallel resistance and parallel reactance.
+        impdut = mag / itop;
+        // DUT parallel resistance
+        resdut_parallel = mag / (itop * cos(phase));
+        // DUT reactance (X)
+        //reactdut = sqrt(abs(pow(impdut, 2) - pow(resdut_parallel, 2)));
+        reactdut = sqrt(pow(resdut_parallel, 2) - pow(impdut, 2));
+        // DUT resistance (R)
+        resdut = sqrt(pow(impdut, 2) - pow(reactdut, 2));
         
-        // print out reactance and RCL values
-        printf("DUT reactance: %lf ohm\n", reactdut);
-        printf("DUT resistance: %lf ohm\n", resdut);
-
-        if (reactdut<=0) {  // capacitance
-            capdut = 1/(2*PI*freqhz*reactdut);
-            capdut = 0-capdut;
-            printf("DUT capacitance: %lf nF\n", capdut * 1e9);
+        if (reactdut_parallel<=0) {  // capacitance
+            capdut_parallel = 1/(2*PI*freqhz*reactdut_parallel);
+            capdut_parallel = 0-capdut_parallel;
+            reactdut = 0-reactdut;
         } else { // inductance
-            inddut = reactdut / (2*PI*freqhz);
-            printf("DUT inductance: %lf uH\n", inddut * 1e6);
+            inddut_parallel = reactdut_parallel / (2*PI*freqhz);
+        }
+
+        // print out results
+        printf("Phase               (phi) : %.3lf rad\n", phase);
+        printf("Impedance             (Z) : %.3lf ohm\n", impdut);
+        printf("Reactance             (X) : %.3lf ohm\n", reactdut);
+        printf("Resistance            (R) : %.3lf ohm\n", resdut);
+        printf("Parallel Resistance  (Rp) : %.3lf ohm\n", resdut_parallel);
+        if (reactdut_parallel<=0) {  // capacitance
+            if (capdut_parallel >= 1e-6) {
+                printf("Parallel Capacitance (Cp) : %.3lf uF\n", capdut_parallel * 1e6);
+            } else {
+                printf("Parallel Capacitance (Cp) : %.3lf nF\n", capdut_parallel * 1e9);
+            }
+        } else { // inductance
+            printf("Parallel Inductance  (Lp) : %.3lf uH\n", inddut_parallel * 1e6);
         }
 
 
-        //printf("capacitance is %lf nF\n", (1.0/(cart100[1]*2*PI*1000))*1000000000  );
+        //reset_dsp_settings();
 
 
     } 

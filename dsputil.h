@@ -11,6 +11,13 @@
 #define SQROOT2 1.4142135623731
 #define PI 3.1415926535897932384626433832795
 
+// ADAU1401 safeload addresses
+#define SAFE_DATA0 0x0810
+#define SAFE_ADDR0 0x0815
+#define SAFE_INITIATE 0x081c
+#define SAFE_SET_IST 0x003c
+
+
 // functions to open and close I2C communication with the DSP
 void dsp_open(void);
 void dsp_close(void);
@@ -57,6 +64,11 @@ void set_dfilter6_bypass (int addr);
 // sets the amplitude between 0.0 and 1.0
 void set_amp(int addr, double a);
 
+// set the switch on or off
+// (Sources->Switch(0,1)->28_0 Format->On/Off Switch)
+// v=0 represents OFF, and v>0 represents ON.
+void set_switch(int addr, int v);
+
 // set the frequency for the DSP Sine with Phase and Gain object
 // (Sources->Oscillators->With Phase->Sine Tone with Phase and Gain)
 void set_sinphase_freq(int addr, int f);
@@ -69,6 +81,12 @@ void set_sinphase_phase(int addr, int ang);
 // (Sources->DC->DC Input Entry)
 // v is a value 0 to 0xffff
 void set_dc_int(int addr, int v);
+// set the DC float (28.0) value for the DSP DC Input Entry object
+// (Sources->DC->DC Input Entry)
+// v is a double value
+void set_dc_float(int addr, double v);
+// safeload version of set_dc_float
+void set_dc_float_safeload(int addr, double v);
 
 // performs DSP readback (data capture register)
 // addr should be 0x081a or 0x081b for ADAU1401 DSP
