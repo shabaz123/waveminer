@@ -4,7 +4,7 @@ Wave Miner
 
 This repository contains the schematic, PCB Gerber files, bill of materials and code for the Wave Miner Digital Signal Processor (DSP) board, which connects to the Raspberry Pi (Pi 4 was tested; other versions can work with a small code change; the addresses called PERIPHERAL_BASE or I2C_BASE in the i2cfunc.h file needs to be modified if you're not using a Pi 4).
 
-For simplicity this project uses a ready-made low-cost (about $20 USD) DSP module from AliExpress, it is the green board on the left in the photo below. The remainder parts and blue circuit board should cost less than $30, and assembly time is just a few hours.
+For simplicity this project uses a ready-made low-cost (about $20 USD) DSP module from AliExpress, it is the green board on the left in the photo below. The remainder parts and blue circuit board should cost less than $30, and assembly time is just a few hours. It can be assembled using a basic soldering iron (it is all through-hole soldering mostly, and a few large surface-mount parts that need no special tools).
 
 <img width="100%" align="left" src="assets\waveminer-pi-annotated.jpg">
 
