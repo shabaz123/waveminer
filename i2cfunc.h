@@ -7,7 +7,7 @@
 
 // Pi 4
 #define PERIPHERAL_BASE (0xFE000000)
-// set PERIPHERAL_BASE for Pi 3B+ and other variants
+// todo: set PERIPHERAL_BASE for Pi 3B+ and other variants
 
 #define I2C_BASE (PERIPHERAL_BASE + 0x804000)
 
