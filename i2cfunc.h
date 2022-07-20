@@ -10,6 +10,7 @@
 // todo: set PERIPHERAL_BASE for Pi 3B+ and other variants
 
 #define I2C_BASE (PERIPHERAL_BASE + 0x804000)
+// think this offset might need changing for different Pi models. To check!
 
 // set timeout for clock stretching. Needed for Pi : (
 int i2c_set_timeout(int val);
