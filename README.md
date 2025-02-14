@@ -186,8 +186,14 @@ Now go into the project folder, and there will be a sub-folder inside there call
 If you wish to use the Pi to configure the elements in the graphical flow, then click on the item in SigmaStudio and make any example modification to it, for instance change the frequency displayed inside the sine tone generation box. You should see a stream of hex bytes displayed in the lower pane in Sigma Studio; those bytes are the values that need to be sent using I2C. Refer to the **dsputil.cpp** file to see how this is done. 
 
 
+Appendix 1: Using I2S Output
+---------------------------------------
 
+If you don't wish to use the analog output, and prefer digital I2S output, then you can use the pin headers and connect as follows: MP6=DATA, MP10=LRCLK, MP11=BCLK. The Sigmal Studio hardware configuration looks like this:
 
+<img width="100%" align="left" src="assets\dsp-hw-config-i2s-out.jpg">
 
+For the DSP flow, use the output sink shown in the diagram here:
 
+<img width="100%" align="left" src="assets\dsp-flow-i2s-out.jpg">
 
