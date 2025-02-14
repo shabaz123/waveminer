@@ -82,7 +82,7 @@ Example output:
 Ordering the PCB
 ----------------
 
-The zip file prefixed **export-gerber-pi-dsp** can be uploaded to popular PCB manufacturer sites such as JLC PCB or Elecrow, for an instant quote. It shouldn't cost more than about $5 (not including shipping charges).
+The zip file prefixed **export-gerber-pi-dsp** can be uploaded to popular PCB manufacturer sites such as JLC PCB or Elecrow, for an instant quote. It shouldn't cost more than about $5 (not including shipping charges). NOTE: It's recommended to use the latest export-gerber-pi-dsp-rev1_1.zip file, not the older file. There are three main differences: (1) A pin header is added for forcing the EEPROM to be Write-Enabled; this is useful when using an external EVAL-ADUSB2EBZ debug tool; you can leave the jumper removed if you're not using that. (2) cleaned up the top-layer copper fill slightly, (3) Improved the silkscreen with larger text. The schematic and bill of materials is not modified, since the only addition is the optional 2-way pin header and jumper, which, as mentioned, are only needed if you plan to use the external debug too.
 
 Ordering the Components
 -----------------------
